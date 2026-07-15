@@ -8,68 +8,63 @@ namespace OperationResult;
 [Serializable]
 public class ErrorStack : Exception
 {
-    private LinkedList<string> context = [];
-    private string? stackTrace;
-    public string? Stack => stackTrace;
+    private LinkedList<string> _context = [];
+    private string? _stackTrace;
+    public string? Stack => _stackTrace;
     
     private ErrorStack() {}
 
     public ErrorStack(string message, string? callSite = null) : base(message)
     {
-        stackTrace = callSite;
+        _stackTrace = callSite;
     }
     public static implicit operator ErrorStack(string message) => new(message);
 
     public ErrorStack(string message, Exception innerException, string? callSite = null) : base(message, innerException)
     {
-        stackTrace = callSite ?? innerException.StackTrace;
+        _stackTrace = callSite ?? innerException.StackTrace;
     }
 
     public ErrorStack Context(string message)
     {
-        context.AddFirst(message);
+        _context.AddFirst(message);
         return this;
     }
 
     public override string ToString()
     {
         StringBuilder str = new();
-        if (InnerException != null)
+        if (Message != string.Empty)
         {
-            str.Append(InnerException.GetType().ToString().Split(".").Last())
-                .Append(": ")
-                .Append(InnerException.Message);
+            str.AppendLine(Message);
         }
-        else if (Message != string.Empty)
+        else if (_context.Count != 0)
         {
-            str.Append(Message);
+            str.AppendLine(_context.Last!.Value);
         }
-        else if (context.Last != null)
+        else if (InnerException != null)
         {
-            str.Append(context.Last.Value);
+            str.AppendLine($"{InnerException.GetType().ToString().Split(".").Last()}: {InnerException.Message}");
         }
 
-        str.AppendLine().AppendLine().Append("Caused by:").AppendLine();
+        str.AppendLine().AppendLine("Caused by:");
 
         int i = -1;
-        foreach (var value in context)
+        foreach (var value in _context)
         {
-            str.Append("  ").Append(++i).Append(". ").Append(value).AppendLine();
+            str.AppendLine($"  {++i}. {value}");
         }
 
         if (Message != string.Empty)
         {
-            str.Append("  ").Append(++i).Append(". ").Append(Message);
+            str.AppendLine($"  {++i}. {Message}");
         }
         if (InnerException != null)
         {
             str.AppendLine()
-                .Append("  ")
-                .Append(++i)
-                .Append(". ")
-                .Append(InnerException.GetType().ToString().Split(".").Last())
-                .Append(": ")
-                .Append(InnerException.Message);
+                .AppendLine(
+                    $"  {++i}. {InnerException.GetType().ToString().Split(".").Last()}: {InnerException.Message}"
+                );
         }
         return str.ToString();
     }
