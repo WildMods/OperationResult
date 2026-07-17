@@ -2,7 +2,7 @@
 {
     public struct SuccessTag { }
 
-    public struct SuccessTag<TResult>
+    public ref struct SuccessTag<TResult> where TResult : allows ref struct
     {
         internal readonly TResult Value;
 

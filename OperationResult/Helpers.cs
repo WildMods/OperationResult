@@ -17,7 +17,7 @@ namespace OperationResult
         /// <summary>
         /// Create "Success" Status or Result
         /// </summary>
-        public static SuccessTag<T> Ok<T>(T result)
+        public static SuccessTag<T> Ok<T>(T result) where T : allows ref struct
         {
             return new SuccessTag<T>(result);
         }
