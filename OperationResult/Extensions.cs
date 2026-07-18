@@ -16,7 +16,7 @@ public static class Extensions
     /// <param name="context">The context description to be attached to the inner ErrorStack</param>
     /// <typeparam name="T">The Ok value type</typeparam>
     /// <returns>The called value, for chaining.</returns>
-    public static Result<T, ErrorStack> Context<T>(this Result<T, ErrorStack> result, string context)
+    public static Result<T, ErrorStack> Context<T>(this Result<T, ErrorStack> result, string context) where T : allows ref struct
     {
         if (result.IsErr()) result.Error!.Context(context);
         return result;
