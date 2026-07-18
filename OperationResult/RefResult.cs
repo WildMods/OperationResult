@@ -8,17 +8,17 @@ namespace OperationResult
     /// <summary>
     /// Result of operation (no result type, only Error field)
     /// </summary>
-    public readonly struct Result<E>
+    public readonly ref struct RefResult<E>
     {
         private readonly E? _error;
         private readonly bool _isOk;
 
-        public Result()
+        public RefResult()
         {
             _isOk = true;
         }
 
-        internal Result(E error)
+        internal RefResult(E error)
         {
             _isOk = false;
             _error = error;
@@ -32,12 +32,12 @@ namespace OperationResult
         
         public string GetErrorMessage() => _error?.ToString() ?? string.Empty;
 
-        public static implicit operator Result<E>(SuccessTag _)
+        public static implicit operator RefResult<E>(SuccessTag _)
         {
             return new();
         }
 
-        public static implicit operator Result<E>(ErrorTag<E> tag)
+        public static implicit operator RefResult<E>(ErrorTag<E> tag)
         {
             return new(tag.Error);
         }
@@ -99,7 +99,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="res"></param>
         /// <returns></returns>
-        public Result<E> And(Result<E> res)
+        public RefResult<E> And(RefResult<E> res)
         {
             return _isOk ? res : this;
         }
@@ -111,7 +111,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<E> AndThen(Func<Result<E>> f)
+        public RefResult<E> AndThen(Func<RefResult<E>> f)
         {
             return _isOk ? f() : this;
         }
@@ -124,7 +124,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="res"></param>
         /// <returns></returns>
-        public Result<E> Or(Result<E> res)
+        public RefResult<E> Or(RefResult<E> res)
         {
             return _isOk ? this : res;
         }
@@ -136,7 +136,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<E> OrElse(Func<E, Result<E>> f)
+        public RefResult<E> OrElse(Func<E, RefResult<E>> f)
         {
             return _isOk ? this : f(_error!);
         }
@@ -148,7 +148,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<E> Inspect(Action f)
+        public RefResult<E> Inspect(Action f)
         {
             if (_isOk) f();
             return this;
@@ -161,7 +161,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<E> InspectErr(Action<E> f)
+        public RefResult<E> InspectErr(Action<E> f)
         {
             if (!_isOk) f(_error!);
             return this;
@@ -170,7 +170,7 @@ namespace OperationResult
         /// <summary>
         /// <para>Maps a Result to the typed Result of a closure, leaving an Err value untouched.</para>
         /// </summary>
-        public Result<T, E> Map<T>(Func<T> f)
+        public RefResult<T, E> Map<T>(Func<T> f) where T : allows ref struct
         {
             return _isOk ? Helpers.Ok(f()) : Helpers.Err(_error!);
         }
@@ -178,7 +178,7 @@ namespace OperationResult
         /// <summary>
         /// <para>Returns the provided default (if Err), or the result of a closure (if Ok).</para>
         /// </summary>
-        public T MapOr<T>(T def, Func<T> f)
+        public T MapOr<T>(T def, Func<T> f) where T : allows ref struct
         {
             return _isOk ? f() : def;
         }
@@ -189,7 +189,7 @@ namespace OperationResult
         ///
         /// <para>This function can be used to unpack a successful result while handling an error.</para>
         /// </summary>
-        public T MapOrElse<T>(Func<E, T> def, Func<T> f)
+        public T MapOrElse<T>(Func<E, T> def, Func<T> f) where T : allows ref struct
         {
             return _isOk ? f() : def(_error!);
         }
@@ -198,7 +198,7 @@ namespace OperationResult
         /// <para>Maps a Result to a T by the result of a closure if the result is Ok, otherwise if Err, returns the
         /// default value for the type T.</para>
         /// </summary>
-        public T MapOrDefault<T>(Func<T> f) where T : notnull
+        public T MapOrDefault<T>(Func<T> f) where T : notnull, allows ref struct
         {
             return _isOk ? f() : default!;
         }
@@ -212,7 +212,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="F"></typeparam>
         /// <returns></returns>
-        public Result<F> MapErr<F>(Func<E, Result<F>> f)
+        public RefResult<F> MapErr<F>(Func<E, RefResult<F>> f)
         {
             return !_isOk ? f(_error!) : Helpers.Ok();
         }
@@ -267,7 +267,7 @@ namespace OperationResult
     /// </summary>
     /// <typeparam name="T">Type of Value field</typeparam>
     /// <typeparam name="E">Type of Error field</typeparam>
-    public readonly struct Result<T, E>
+    public readonly ref struct RefResult<T, E> where T : allows ref struct
     {
         private readonly T? _value;
         internal readonly E? Error;
@@ -275,13 +275,13 @@ namespace OperationResult
 
         public T? Value => _value;
 
-        private Result(T? result)
+        private RefResult(T? result)
         {
             _isOk = true;
             _value = result;
         }
 
-        private Result(E? error)
+        private RefResult(E? error)
         {
             _isOk = false;
             Error = error;
@@ -296,22 +296,22 @@ namespace OperationResult
 
         public string GetErrorMessage() => Error?.ToString() ?? string.Empty;
 
-        public static implicit operator Result<T, E>(T? result)
+        public static implicit operator RefResult<T, E>(T? result)
         {
-            return new Result<T, E>(result);
+            return new(result);
         }
 
-        public static implicit operator Result<T, E>(SuccessTag<T> tag)
+        public static implicit operator RefResult<T, E>(SuccessTag<T> tag)
         {
-            return new Result<T, E>(tag.Value);
+            return new(tag.Value);
         }
 
-        public static implicit operator Result<T, E>(ErrorTag<E> tag)
+        public static implicit operator RefResult<T, E>(ErrorTag<E> tag)
         {
-            return new Result<T, E>(tag.Error);
+            return new(tag.Error);
         }
 
-        private Result<U, E> ConvertError<U>()
+        private RefResult<U, E> ConvertError<U>() where U : allows ref struct
         {
             return Helpers.Err(Error!);
         }
@@ -382,7 +382,7 @@ namespace OperationResult
         /// <param name="res"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> And<U>(Result<U, E> res)
+        public RefResult<U, E> And<U>(RefResult<U, E> res) where U : allows ref struct
         {
             return _isOk && res._isOk || _isOk ? res : ConvertError<U>();
         }
@@ -395,7 +395,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> AndThen<U>(Func<T, Result<U, E>> f)
+        public RefResult<U, E> AndThen<U>(Func<T, RefResult<U, E>> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : ConvertError<U>();
         }
@@ -408,7 +408,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="res"></param>
         /// <returns></returns>
-        public Result<T, E> Or(Result<T, E> res)
+        public RefResult<T, E> Or(RefResult<T, E> res)
         {
             return _isOk ? this : res;
         }
@@ -420,7 +420,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<T, E> OrElse(Func<E, Result<T, E>> f)
+        public RefResult<T, E> OrElse(Func<E, RefResult<T, E>> f)
         {
             return _isOk ? this : f(Error!);
         }
@@ -432,7 +432,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<T, E> Inspect(Action<T> f)
+        public RefResult<T, E> Inspect(Action<T> f)
         {
             if (_isOk) f(_value!);
             return this;
@@ -445,7 +445,7 @@ namespace OperationResult
         /// </summary>
         /// <param name="f"></param>
         /// <returns></returns>
-        public Result<T, E> InspectErr(Action<E> f)
+        public RefResult<T, E> InspectErr(Action<E> f)
         {
             if (!_isOk) f(Error!);
             return this;
@@ -460,7 +460,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> Map<U>(Func<T, U> f)
+        public RefResult<U, E> Map<U>(Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : ConvertError<U>();
         }
@@ -475,7 +475,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public U MapOr<U>(U def, Func<T, U> f)
+        public U MapOr<U>(U def, Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : def;
         }
@@ -490,7 +490,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public U MapOrElse<U>(Func<E, U> def, Func<T, U> f)
+        public U MapOrElse<U>(Func<E, U> def, Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : def(Error!);
         }
@@ -503,7 +503,7 @@ namespace OperationResult
         /// <typeparam name="U">The type to transform the contained value into.</typeparam>
         /// <returns>The result of applying f to the contained value, or the default value for non-nullable type
         /// U</returns>
-        public U MapOrDefault<U>(Func<T, U> f) where U : notnull
+        public U MapOrDefault<U>(Func<T, U> f) where U : notnull, allows ref struct
         {
             return _isOk ? f(_value!) : default!;
         }
@@ -517,7 +517,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="F"></typeparam>
         /// <returns></returns>
-        public Result<T, F> MapErr<F>(Func<E, Result<T, F>> f)
+        public RefResult<T, F> MapErr<F>(Func<E, RefResult<T, F>> f)
         {
             return !_isOk ? f(Error!) : Helpers.Ok(_value!);
         }
@@ -577,167 +577,6 @@ namespace OperationResult
         public E ExpectErr(string message)
         {
             return !_isOk ? Error! : throw new InvalidOperationException(message);
-        }
-    }
-
-    /// <summary>
-    /// Result of operation (with different Errors)
-    /// </summary>
-    /// <typeparam name="T">Type of Value field</typeparam>
-    /// <typeparam name="E1">Type of first Error</typeparam>
-    /// <typeparam name="E2">Type of second Error</typeparam>
-    public readonly struct Result<T, E1, E2>
-    {
-        private readonly bool _isSuccess;
-
-        public readonly T? Value;
-        public readonly object? Error;
-
-        public bool IsSuccess => _isSuccess;
-        public bool IsError => !_isSuccess;
-
-        public bool HasError<E>() => Error is E;
-        public E? GeE<E>() => (E?)Error;
-
-        private Result(T result)
-        {
-            _isSuccess = true;
-            Value = result;
-            Error = null;
-        }
-
-        private Result(object error)
-        {
-            _isSuccess = false;
-            Value = default;
-            Error = error;
-        }
-
-        public void Deconstruct(out T? result, out object? error)
-        {
-            result = Value;
-            error = Error;
-        }
-
-        public static implicit operator bool(Result<T, E1, E2> result)
-        {
-            return result._isSuccess;
-        }
-
-        public static implicit operator Result<T, E1, E2>(T result)
-        {
-            return new Result<T, E1, E2>(result);
-        }
-
-        public static implicit operator Result<T, E1, E2>(E1 error)
-        {
-            return new Result<T, E1, E2>(error);
-        }
-
-        public static implicit operator Result<T, E1, E2>(E2 error)
-        {
-            return new Result<T, E1, E2>(error);
-        }
-
-        public static implicit operator Result<T, E1, E2>(SuccessTag<T> tag)
-        {
-            return new Result<T, E1, E2>(tag.Value);
-        }
-
-        public static implicit operator Result<T, E1, E2>(ErrorTag<E1> tag)
-        {
-            return new Result<T, E1, E2>(tag.Error);
-        }
-
-        public static implicit operator Result<T, E1, E2>(ErrorTag<E2> tag)
-        {
-            return new Result<T, E1, E2>(tag.Error);
-        }
-    }
-
-    /// <summary>
-    /// Result of operation (with different Errors)
-    /// </summary>
-    /// <typeparam name="T">Type of Value field</typeparam>
-    /// <typeparam name="E1">Type of first Error</typeparam>
-    /// <typeparam name="E2">Type of second Error</typeparam>
-    /// <typeparam name="E3">Type of third Error</typeparam>
-    public readonly struct Result<T, E1, E2, E3>
-    {
-        private readonly bool isSuccess;
-
-        public readonly T? Value;
-        public readonly object? Error;
-
-        public bool IsSuccess => isSuccess;
-        public bool IsError => !isSuccess;
-
-        public bool HasError<E>() => Error is E;
-        public E? GeE<E>() => (E?)Error;
-
-        private Result(T result)
-        {
-            isSuccess = true;
-            Value = result;
-            Error = null;
-        }
-
-        private Result(object error)
-        {
-            isSuccess = false;
-            Value = default;
-            Error = error;
-        }
-
-        public void Deconstruct(out T? result, out object? error)
-        {
-            result = Value;
-            error = Error;
-        }
-
-        public static implicit operator bool(Result<T, E1, E2, E3> result)
-        {
-            return result.isSuccess;
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(T result)
-        {
-            return new Result<T, E1, E2, E3>(result);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(E1 error)
-        {
-            return new Result<T, E1, E2, E3>(error);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(E2 error)
-        {
-            return new Result<T, E1, E2, E3>(error);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(E3 error)
-        {
-            return new Result<T, E1, E2, E3>(error);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(SuccessTag<T> tag)
-        {
-            return new Result<T, E1, E2, E3>(tag.Value);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(ErrorTag<E1> tag)
-        {
-            return new Result<T, E1, E2, E3>(tag.Error);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(ErrorTag<E2> tag)
-        {
-            return new Result<T, E1, E2, E3>(tag.Error);
-        }
-
-        public static implicit operator Result<T, E1, E2, E3>(ErrorTag<E3> tag)
-        {
-            return new Result<T, E1, E2, E3>(tag.Error);
         }
     }
 }

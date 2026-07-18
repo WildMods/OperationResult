@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace OperationResult;
 
@@ -16,7 +15,20 @@ public static class Extensions
     /// <param name="context">The context description to be attached to the inner ErrorStack</param>
     /// <typeparam name="T">The Ok value type</typeparam>
     /// <returns>The called value, for chaining.</returns>
-    public static Result<T, ErrorStack> Context<T>(this Result<T, ErrorStack> result, string context) where T : allows ref struct
+    public static Result<T, ErrorStack> Context<T>(this Result<T, ErrorStack> result, string context)
+    {
+        if (result.IsErr()) result.Error!.Context(context);
+        return result;
+    }
+
+    /// <summary>
+    /// Attaches a context string directly onto the contained Err value, if any.
+    /// </summary>
+    /// <param name="result">The called Result value, whose Error type must be ErrorStack</param>
+    /// <param name="context">The context description to be attached to the inner ErrorStack</param>
+    /// <typeparam name="T">The Ok value type</typeparam>
+    /// <returns>The called value, for chaining.</returns>
+    public static RefResult<T, ErrorStack> Context<T>(this RefResult<T, ErrorStack> result, string context) where T : allows ref struct
     {
         if (result.IsErr()) result.Error!.Context(context);
         return result;
