@@ -170,7 +170,7 @@ namespace OperationResult
         /// <summary>
         /// <para>Maps a Result to the typed Result of a closure, leaving an Err value untouched.</para>
         /// </summary>
-        public Result<T, E> Map<T>(Func<T> f)
+        public Result<T, E> Map<T>(Func<T> f) where T : allows ref struct
         {
             return _isOk ? Helpers.Ok(f()) : Helpers.Err(_error!);
         }
@@ -178,7 +178,7 @@ namespace OperationResult
         /// <summary>
         /// <para>Returns the provided default (if Err), or the result of a closure (if Ok).</para>
         /// </summary>
-        public T MapOr<T>(T def, Func<T> f)
+        public T MapOr<T>(T def, Func<T> f) where T : allows ref struct
         {
             return _isOk ? f() : def;
         }
@@ -189,7 +189,7 @@ namespace OperationResult
         ///
         /// <para>This function can be used to unpack a successful result while handling an error.</para>
         /// </summary>
-        public T MapOrElse<T>(Func<E, T> def, Func<T> f)
+        public T MapOrElse<T>(Func<E, T> def, Func<T> f) where T : allows ref struct
         {
             return _isOk ? f() : def(_error!);
         }
@@ -198,7 +198,7 @@ namespace OperationResult
         /// <para>Maps a Result to a T by the result of a closure if the result is Ok, otherwise if Err, returns the
         /// default value for the type T.</para>
         /// </summary>
-        public T MapOrDefault<T>(Func<T> f) where T : notnull
+        public T MapOrDefault<T>(Func<T> f) where T : notnull, allows ref struct
         {
             return _isOk ? f() : default!;
         }
@@ -311,7 +311,7 @@ namespace OperationResult
             return new Result<T, E>(tag.Error);
         }
 
-        private Result<U, E> ConvertError<U>()
+        private Result<U, E> ConvertError<U>() where U : allows ref struct
         {
             return Helpers.Err(Error!);
         }
@@ -382,7 +382,7 @@ namespace OperationResult
         /// <param name="res"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> And<U>(Result<U, E> res)
+        public Result<U, E> And<U>(Result<U, E> res) where U : allows ref struct
         {
             return _isOk && res._isOk || _isOk ? res : ConvertError<U>();
         }
@@ -395,7 +395,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> AndThen<U>(Func<T, Result<U, E>> f)
+        public Result<U, E> AndThen<U>(Func<T, Result<U, E>> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : ConvertError<U>();
         }
@@ -460,7 +460,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public Result<U, E> Map<U>(Func<T, U> f)
+        public Result<U, E> Map<U>(Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : ConvertError<U>();
         }
@@ -475,7 +475,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public U MapOr<U>(U def, Func<T, U> f)
+        public U MapOr<U>(U def, Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : def;
         }
@@ -490,7 +490,7 @@ namespace OperationResult
         /// <param name="f"></param>
         /// <typeparam name="U"></typeparam>
         /// <returns></returns>
-        public U MapOrElse<U>(Func<E, U> def, Func<T, U> f)
+        public U MapOrElse<U>(Func<E, U> def, Func<T, U> f) where U : allows ref struct
         {
             return _isOk ? f(_value!) : def(Error!);
         }
@@ -503,7 +503,7 @@ namespace OperationResult
         /// <typeparam name="U">The type to transform the contained value into.</typeparam>
         /// <returns>The result of applying f to the contained value, or the default value for non-nullable type
         /// U</returns>
-        public U MapOrDefault<U>(Func<T, U> f) where U : notnull
+        public U MapOrDefault<U>(Func<T, U> f) where U : notnull, allows ref struct
         {
             return _isOk ? f(_value!) : default!;
         }
